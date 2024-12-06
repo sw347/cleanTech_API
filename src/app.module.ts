@@ -31,7 +31,7 @@ import { UserProfileEntity } from "./user/entity/user-profile.entity";
           UserTokenEntity,
           UserProfileEntity,
         ],
-        synchronize: false,
+        synchronize: true,
       }),
       inject: [ConfigService],
     }),

@@ -40,6 +40,8 @@ export class UserService {
     console.log('oauthUser 식별자: ', oauthUser.identifier);
     console.log('oauthUser 프로바이더: ', oauthUser.provider);
 
+    console.log(oauthUser)
+
     const now = DateTime.now().setZone('Asia/Seoul').toMillis();
 
     const qr = this.dataSource.createQueryRunner();
@@ -137,6 +139,13 @@ export class UserService {
 
   async createHashToken(token: string): Promise<string> {
     return await hash(token, { raw: false });
+  }
+
+  async findOneById(userId: number) {
+    return await this.userRepo.findOne({
+      where: {id: userId},
+      relations: ['profile']
+    });
   }
 
 }

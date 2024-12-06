@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { OAuth2Client } from 'google-auth-library';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { OAuth2Client } from "google-auth-library";
 import { UserService } from "../user/user.service";
 import { JwtService } from "@nestjs/jwt";
 import * as process from "process";
@@ -16,7 +16,7 @@ export class AuthService {
 
   constructor(
     private readonly userService: UserService,
-    private readonly jwtService: JwtService,
+    private readonly jwtService: JwtService
   ) {
     this.googleClient = new OAuth2Client({
       clientId: process.env.GOOGLE_CLIENT_ID
@@ -26,16 +26,16 @@ export class AuthService {
   async login(oauthUser: OauthUserDto): Promise<LoginDto> {
     let user = await this.userService.findUserByIdentifier(
       oauthUser.identifier,
-      true,
+      true
     );
 
     if (user == null) {
       await this.userService.createUser(oauthUser);
-      console.log(oauthUser.name, " 계정 생성")
+      console.log(oauthUser.name, " 계정 생성");
       user = await this.userService.findUserByIdentifier(oauthUser.identifier);
     }
 
-    if (user == null) throw new LoginException('cannot find user');
+    if (user == null) throw new LoginException("cannot find user");
 
     if (user.deletedAt != null) {
       await this.userService.restore(user.id);
@@ -44,39 +44,48 @@ export class AuthService {
     const accessToken = await this.createAccessToken(oauthUser.identifier);
     const refreshToken = await this.createRefreshToken(oauthUser.identifier);
 
+    console.log(user.id)
     await this.userService.updateOrCreateToken(user.id, refreshToken);
 
     return {
       accessToken: accessToken,
       expiresIn: await this.getTokenExpirationTime(),
-      refreshToken: refreshToken,
-    }
+      refreshToken: refreshToken
+    };
 
   }
 
   async createAccessToken(identifier: string): Promise<string> {
-    console.log("accessToken 생성")
+    console.log("accessToken 생성");
+
+    console.log('액세스 identifier: ', identifier);
+
     return await this.jwtService.signAsync(
       {
         identifier
       }, {
-        secret: 'accessToken',
-        expiresIn: '1h'
-      })
+        expiresIn: 360000,
+        secret: process.env.SECRET_KEY, algorithm: "HS256"
+      });
   }
 
   async createRefreshToken(identifier: string): Promise<string> {
-    console.log()
+    console.log("refreshToken 생성");
+
+    console.log('리프레쉬 identifier: ', identifier);
+
     return await this.jwtService.signAsync({
-      identifier,
+      identifier
     }, {
-      secret: 'refreshToken'
-    })
+      secret: process.env.SECRET_KEY,
+      algorithm: "HS256"
+    });
   }
+
 
   async getTokenExpirationTime(): Promise<number> {
     return DateTime.now()
-      .plus({milliseconds: 3600000})
+      .plus({ milliseconds: 3600000 })
       .toMillis();
   }
 
@@ -88,23 +97,23 @@ export class AuthService {
   }
 
   async getGoogleOauthUser(
-    token: string,
+    token: string
   ): Promise<OauthUserDto | null> {
     const profile = await this.googleClient.getTokenInfo(token);
     if (profile.sub == null) return null;
 
     return {
-      provider: 'google',
+      provider: "google",
       identifier: profile.sub,
       email: profile.email,
-      name: "학생",
-    }
+      name: "학생"
+    };
   }
 
   async getIdentifierFormRefreshToken(token: string): Promise<string | null> {
     try {
       const data = await this.jwtService.verifyAsync<TokenDto>(token, {
-        secret: 'refreshToken'
+        secret: process.env.SECRET_KEY
       });
 
       return data.identifier;
@@ -117,9 +126,33 @@ export class AuthService {
 
   async verifyRefreshToken(
     hash: string,
-    refreshToken: string,
+    refreshToken: string
   ): Promise<boolean> {
     return await verify(hash, refreshToken);
+  }
+
+  async validateToken(accessToken: string) {
+    try {
+      // console.log(authToken)
+
+      const payload = this.jwtService.verify(accessToken, {
+        secret: process.env.SECRET_KEY,  // JWT 비밀키로 검증
+        algorithms: ['HS256'],
+      });
+
+      console.log(payload)
+      const userId = payload.userId;
+
+      // userId로 유저 데이터 조회
+      const user = await this.userService.findOneById(userId);
+
+      return user;
+
+    } catch (err) {
+      console.error("JWT Verification Error:", err);
+      throw new UnauthorizedException("Invalid JWT token");
+
+    }
   }
 
 }

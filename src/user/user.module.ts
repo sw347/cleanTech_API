@@ -6,6 +6,7 @@ import { UserEntity } from "./entity/user.entity";
 import { SocialLoginEntity } from "./entity/social-login.entity";
 import { UserTokenEntity } from "./entity/user-token.entity";
 import { UserProfileEntity } from "./entity/user-profile.entity";
+import { AuthService } from "../auth/auth.service";
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { UserProfileEntity } from "./entity/user-profile.entity";
     ]),
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, AuthService],
   exports: [UserService],
 })
 export class UserModule {}
