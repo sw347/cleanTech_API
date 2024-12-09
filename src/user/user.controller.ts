@@ -16,16 +16,10 @@ export class UserController {
   @Get('/profile')
   @UseGuards(JwtAuthGuard)
   async getUserProfile (@User() user: UserEntity): Promise<UserProfileDto> {
-    // console.log(user.id);
-    // console.log(user.name);
-    // console.log(user.profileId);
-    // console.log(user.createdAt);
-    // console.log(user.role);
-
     return {
       id: user.id,
       name: user.name,
-      profileUrl: 'null',
+      profileUrl: user.profileUrl,
       createdAt: user.createdAt,
       role: user.role
     }

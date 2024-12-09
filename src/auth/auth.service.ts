@@ -64,7 +64,7 @@ export class AuthService {
       {
         identifier
       }, {
-        expiresIn: 360000,
+        expiresIn: '1h',
         secret: process.env.SECRET_KEY, algorithm: "HS256"
       });
   }
@@ -99,14 +99,24 @@ export class AuthService {
   async getGoogleOauthUser(
     token: string
   ): Promise<OauthUserDto | null> {
-    const profile = await this.googleClient.getTokenInfo(token);
-    if (profile.sub == null) return null;
+
+    const profile = await this.googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID, // 클라이언트 ID
+    });
+    // const profile = await this.googleClient.getTokenInfo(token);
+
+    if (!profile) return null;
+
+    const payload = profile.getPayload();
+
 
     return {
       provider: "google",
-      identifier: profile.sub,
-      email: profile.email,
-      name: "학생"
+      identifier: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      profileUrl: payload.profile,
     };
   }
 

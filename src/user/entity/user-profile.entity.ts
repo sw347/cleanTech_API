@@ -8,6 +8,9 @@ export class UserProfileEntity {
   @Column({name: 'name', type: 'varchar', length: 191, nullable:  false})
   name: string;
 
+  @Column({name: 'profile_url', type: 'varchar', length: 191, nullable:  false})
+  profileUrl: string;
+
   @Column({name: 'version', type: 'int', nullable: false})
   version: number;
 

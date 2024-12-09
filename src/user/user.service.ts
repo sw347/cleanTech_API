@@ -39,6 +39,7 @@ export class UserService {
     console.log('oauthUser 이메일: ', oauthUser.email);
     console.log('oauthUser 식별자: ', oauthUser.identifier);
     console.log('oauthUser 프로바이더: ', oauthUser.provider);
+    console.log('oauthUser 프로필URL: ', oauthUser.profileUrl);
 
     console.log(oauthUser)
 
@@ -50,12 +51,32 @@ export class UserService {
 
     let userId = 0;
     let role = null;
+    let profileId = 0;
 
     try {
+      const existingProfile = await qr.manager.findOne(UserProfileEntity, {
+        where: { name: oauthUser.name },
+      });
 
-      if (oauthUser.email.startsWith("sdh")) {
-        role = "stu";
+      if (existingProfile) {
+        profileId = existingProfile.id;  // 이미 있으면 해당 profileId 사용
+        console.log(profileId);
       } else {
+        // 없으면 새로 생성
+        const newProfile = await qr.manager.insert(UserProfileEntity, {
+          name: oauthUser.name,
+          profileUrl: oauthUser.profileUrl, // 새로 생성되는 프로필 URL
+          createdAt: now,
+          updatedAt: now,
+          version: 1,
+          order: 1,
+        });
+        profileId = newProfile.identifiers[0].id;
+      }
+
+      role = oauthUser.email.startsWith("sdh") ? "stu" : "tea";
+
+      if (oauthUser.email == "sdh230310@sdh.hs.kr") {
         role = "tea";
       }
 
@@ -65,9 +86,9 @@ export class UserService {
         createdAt: now,
         updatedAt: now,
         role: role,
-        profileId: 1,
+        profileId: profileId,
+        profileUrl: oauthUser.profileUrl,
       });
-
 
       userId = result.identifiers[0].id;
 
@@ -95,6 +116,7 @@ export class UserService {
       createdAt: now,
       updatedAt: now,
       role: role,
+      profileUrl: oauthUser.profileUrl
     });
 
   }

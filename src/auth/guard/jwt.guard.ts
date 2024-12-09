@@ -12,7 +12,7 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const request = context.switchToHttp().getRequest();
 
-      console.log("리퀘스트: ", request);
+      // console.log("리퀘스트: ", request);
 
       console.log('액세스토큰: ',request.cookies['accessToken']);
 
