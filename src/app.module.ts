@@ -11,30 +11,25 @@ import { UserTokenEntity } from "./user/entity/user-token.entity";
 import { UserProfileEntity } from "./user/entity/user-profile.entity";
 import { CleanModule } from "./clean/clean.module";
 import { CleanEntity } from "./clean/entity/clean.entity";
-import { MulterModule } from "@nestjs/platform-express";
-import { ServeStaticModule } from "@nestjs/serve-static";
 import * as process from "process";
 import { join } from "path";
+import config from "./common/config/config";
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), '..', 'server', 'uploads'),
-      serveRoot: '/uploads'
-    }),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ".env"
+      load: [config],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: "mysql",
-        host: "localhost",
-        port: 3306,
-        username: "root",
-        password: "sw070403",
-        database: "main",
+        host: configService.get('db.host'),
+        port: configService.get<number>('db.port'),
+        username: configService.get('db.username'),
+        password: configService.get('db.password'),
+        database: configService.get('db.database'),
         entities: [
           SocialLoginEntity,
           UserEntity,
@@ -42,7 +37,7 @@ import { join } from "path";
           UserProfileEntity,
           CleanEntity
         ],
-        synchronize: true
+        synchronize: configService.get<boolean>('db.sync'),
       }),
       inject: [ConfigService]
     }),

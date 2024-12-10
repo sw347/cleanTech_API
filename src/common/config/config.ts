@@ -1,4 +1,4 @@
-import { stringToBoolean } from "../utils/index.utils";
+import { stringToBoolean } from "../../utils/index.utils";
 
 export default () => ({
   db: {

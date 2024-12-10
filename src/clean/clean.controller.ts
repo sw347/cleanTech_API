@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Get, Post, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { CleanService } from './clean.service';
 import { CleanDto } from "./dto/clean.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -6,6 +6,7 @@ import { diskStorage } from "multer";
 import { DateTime } from "luxon";
 import { extname } from "path";
 import * as fs from "fs";
+import { JwtAuthGuard } from "../auth/guard/jwt.guard";
 
 @Controller('clean')
 export class CleanController {
@@ -32,4 +33,10 @@ export class CleanController {
 
     return await this.cleanService.dataInput(body, file);
   }
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async findAll() {
+    return await this.cleanService.findAll();
+  }
+
 }

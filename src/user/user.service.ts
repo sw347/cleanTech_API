@@ -8,18 +8,23 @@ import { SocialLoginEntity } from "./entity/social-login.entity";
 import { UserTokenEntity } from "./entity/user-token.entity";
 import { hash } from "argon2";
 import { UserProfileEntity } from "./entity/user-profile.entity";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class UserService {
 
-  @InjectDataSource()
-  private readonly dataSource: DataSource;
-  @InjectRepository(UserEntity)
-  private readonly userRepo: Repository<UserEntity>;
-  @InjectRepository(UserTokenEntity)
-  private readonly userTokenRepo: Repository<UserTokenEntity>;
-  @InjectRepository(UserProfileEntity)
-  private readonly userProfileRepo: Repository<UserProfileEntity>;
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
+    @InjectRepository(UserTokenEntity)
+    private readonly userTokenRepo: Repository<UserTokenEntity>,
+    @InjectRepository(UserProfileEntity)
+    private readonly userProfileRepo: Repository<UserProfileEntity>,
+    private readonly configService: ConfigService
+  ) {
+  }
 
   async findUserByIdentifier(
     identifier: string,
@@ -35,15 +40,15 @@ export class UserService {
   }
 
   async createUser(oauthUser: OauthUserDto): Promise<UserEntity | null> {
-    console.log('oauthUser 이름: ', oauthUser.name);
-    console.log('oauthUser 이메일: ', oauthUser.email);
-    console.log('oauthUser 식별자: ', oauthUser.identifier);
-    console.log('oauthUser 프로바이더: ', oauthUser.provider);
-    console.log('oauthUser 프로필URL: ', oauthUser.profileUrl);
+    console.log("oauthUser 이름: ", oauthUser.name);
+    console.log("oauthUser 이메일: ", oauthUser.email);
+    console.log("oauthUser 식별자: ", oauthUser.identifier);
+    console.log("oauthUser 프로바이더: ", oauthUser.provider);
+    console.log("oauthUser 프로필URL: ", oauthUser.profileUrl);
 
-    console.log(oauthUser)
+    console.log(oauthUser);
 
-    const now = DateTime.now().setZone('Asia/Seoul').toMillis();
+    const now = DateTime.now().setZone(this.configService.get<string>("tz")).toMillis();
 
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
@@ -55,7 +60,7 @@ export class UserService {
 
     try {
       const existingProfile = await qr.manager.findOne(UserProfileEntity, {
-        where: { name: oauthUser.name },
+        where: { name: oauthUser.name }
       });
 
       if (existingProfile) {
@@ -69,7 +74,7 @@ export class UserService {
           createdAt: now,
           updatedAt: now,
           version: 1,
-          order: 1,
+          order: 1
         });
         profileId = newProfile.identifiers[0].id;
       }
@@ -80,6 +85,8 @@ export class UserService {
         role = "tea";
       }
 
+      console.log("역할: ", role);
+
       const result = await qr.manager.insert(UserEntity, {
         name: oauthUser.name,
         email: oauthUser.email,
@@ -87,9 +94,10 @@ export class UserService {
         updatedAt: now,
         role: role,
         profileId: profileId,
-        profileUrl: oauthUser.profileUrl,
+        profileUrl: oauthUser.profileUrl
       });
 
+      console.log(result.identifiers[0].id);
       userId = result.identifiers[0].id;
 
       await qr.manager.insert(SocialLoginEntity, {
@@ -109,7 +117,7 @@ export class UserService {
 
     if (userId === 0) return null;
 
-    return this.userRepo.create({
+    const user = this.userRepo.create({
       id: userId,
       name: oauthUser.name,
       email: oauthUser.email,
@@ -119,6 +127,7 @@ export class UserService {
       profileUrl: oauthUser.profileUrl
     });
 
+    return this.userRepo.save(user);
   }
 
   async findUserRefreshTokenByIdentifier(
@@ -126,8 +135,8 @@ export class UserService {
   ): Promise<string | null> {
     const userToken = await this.userTokenRepo.findOne({
       where: {
-        user: { socialLogin: { identifier }, deletedAt: IsNull() },
-      },
+        user: { socialLogin: { identifier }, deletedAt: IsNull() }
+      }
     });
     if (userToken == null) return null;
 
@@ -164,9 +173,11 @@ export class UserService {
   }
 
   async findOneById(userId: number) {
+    console.log("너 뭔데, ", userId);
+
     return await this.userRepo.findOne({
-      where: {id: userId},
-      relations: ['profile']
+      where: { id: userId },
+      relations: ["profile"]
     });
   }
 

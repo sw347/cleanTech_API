@@ -93,6 +93,12 @@ export class AuthService {
     provider: string,
     token: string
   ): Promise<OauthUserDto | null> {
+    const profile = await this.googleClient.getTokenInfo(token);
+
+    if (!profile) {
+      throw new UnauthorizedException("Invalid Google token");
+    }
+
     return await this.getGoogleOauthUser(token);
   }
 

@@ -108,7 +108,7 @@ export class AuthController {
       const { accessToken, refreshToken } = await this.authService.login(user);
 
       response.cookie('accessToken', accessToken, {
-        maxAge: 360000,
+        maxAge: 3600000,
       });
 
       response.cookie('refreshToken', refreshToken);

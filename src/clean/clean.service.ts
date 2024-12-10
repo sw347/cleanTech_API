@@ -29,7 +29,7 @@ export class CleanService {
       fs.mkdirSync(uploadFilePath);
     }
 
-    return this.uploadFileURL(uploadFilePath + '/' + file.originalname);
+    return this.uploadFileURL(uploadFilePath + '/'+ file.filename);
   }
 
   async dataInput(data: CleanDto, file: Express.Multer.File) {
@@ -43,7 +43,7 @@ export class CleanService {
     const id = Number(selectedValue?.split(" : ")[0]);
     const locate = selectedValue?.split(" : ")[1];
 
-    return this.cleanRepo.create({
+    const task = this.cleanRepo.create({
       id: id,
       name: username,
       role: userrole,
@@ -51,5 +51,11 @@ export class CleanService {
       location: locate,
       createdAt: now
     });
+
+    return this.cleanRepo.save(task);
+  }
+
+  async findAll() {
+    return this.cleanRepo.find();
   }
 }
