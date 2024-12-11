@@ -1,4 +1,5 @@
 import { stringToBoolean } from "../../utils/index.utils";
+import * as process from "process";
 
 export default () => ({
   db: {
@@ -20,7 +21,7 @@ export default () => ({
   jwt: {
     accessTokenSecret: process.env.SECRET_KEY,
     accessTokenExpiresIn: process.env.EXPIRESIN ? parseInt(process.env.EXPIRESIN, 10) : 1000 * 60 * 60 * 3,
-    refreshTokenSecret: prcoess.env.SECRET_KEY,
+    refreshTokenSecret: process.env.SECRET_KEY
   },
-  tz: process.env.TZ || 'Asia/Seoul',
+  tz: process.env.TZ || "Asia/Seoul"
 })

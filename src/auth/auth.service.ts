@@ -2,13 +2,13 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { OAuth2Client } from "google-auth-library";
 import { UserService } from "../user/user.service";
 import { JwtService } from "@nestjs/jwt";
-import * as process from "process";
 import { OauthUserDto } from "./dto/oauth-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { LoginException } from "./exception/login.exception";
 import { DateTime } from "luxon";
 import { TokenDto } from "./dto/token.dto";
 import { verify } from "argon2";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class AuthService {
@@ -16,10 +16,11 @@ export class AuthService {
 
   constructor(
     private readonly userService: UserService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {
     this.googleClient = new OAuth2Client({
-      clientId: process.env.GOOGLE_CLIENT_ID
+      clientId: this.configService.get('oauth.google.clientId'),
     });
   }
 
@@ -65,7 +66,8 @@ export class AuthService {
         identifier
       }, {
         expiresIn: '1h',
-        secret: process.env.SECRET_KEY, algorithm: "HS256"
+        secret: this.configService.get('jwt.accessTokenSecret'),
+        algorithm: "HS256"
       });
   }
 
@@ -77,7 +79,7 @@ export class AuthService {
     return await this.jwtService.signAsync({
       identifier
     }, {
-      secret: process.env.SECRET_KEY,
+      secret: this.configService.get('jwt.refreshTokenSecret'),
       algorithm: "HS256"
     });
   }
@@ -108,7 +110,7 @@ export class AuthService {
 
     const profile = await this.googleClient.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID, // 클라이언트 ID
+      audience: this.configService.get('oauth.google.clientId'), // 클라이언트 ID
     });
     // const profile = await this.googleClient.getTokenInfo(token);
 
@@ -129,7 +131,7 @@ export class AuthService {
   async getIdentifierFormRefreshToken(token: string): Promise<string | null> {
     try {
       const data = await this.jwtService.verifyAsync<TokenDto>(token, {
-        secret: process.env.SECRET_KEY
+        secret: this.configService.get('jwt.refreshTokenSecret')
       });
 
       return data.identifier;
@@ -152,7 +154,7 @@ export class AuthService {
       // console.log(authToken)
 
       const payload = this.jwtService.verify(accessToken, {
-        secret: process.env.SECRET_KEY,  // JWT 비밀키로 검증
+        secret: this.configService.get('jwt.accessTokenSecret'),  // JWT 비밀키로 검증
         algorithms: ['HS256'],
       });
 
